@@ -30,7 +30,7 @@ resource "aws_vpc" "main" {
   instance_tenancy = "default"
   tags = merge(
     local.default_tags, {
-      Name = "${var.prefix}-public-subnet"
+      Name = "${var.prefix}-vpc"
     }
   )
 }
@@ -44,7 +44,7 @@ resource "aws_subnet" "public_subnet" {
   availability_zone = data.aws_availability_zones.available.names[count.index]
   tags = merge(
     local.default_tags, {
-      Name = "${var.prefix}-public-subnet"
+      Name = "${var.prefix}-public-subnet-${count.index}"
     }
   )
 }
@@ -61,20 +61,20 @@ resource "aws_internet_gateway" "igw" {
 }
 
 # Route table to route add default gateway pointing to Internet Gateway (IGW)
-resource "aws_route_table" "public_subnets" {
+resource "aws_route_table" "public_route_table" {
   vpc_id = aws_vpc.main.id
   route {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.igw.id
   }
   tags = {
-    Name = "${var.prefix}-route-public-subnets"
+    Name = "${var.prefix}-route-public-route_table"
   }
 }
 
 # Associate subnets with the custom route table
-resource "aws_route_table_association" "public_routes" {
+resource "aws_route_table_association" "public_route_table_association" {
   count          = length(aws_subnet.public_subnet[*].id)
-  route_table_id = aws_route_table.public_subnets.id
+  route_table_id = aws_route_table.public_route_table.id
   subnet_id      = aws_subnet.public_subnet[count.index].id
 }
